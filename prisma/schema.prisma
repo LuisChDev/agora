@@ -1,0 +1,148 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum PlaceType {
+  spot
+  path
+  area
+}
+
+enum Privacy {
+  PUBLIC      @map("public")
+  INVITE_ONLY @map("invite_only")
+}
+
+enum RSVPStatus {
+  ACCEPTED  @map("accepted")
+  DECLINED  @map("declined")
+  PENDING   @map("pending")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  createdAt  DateTime @default(now()) @map(name: "created_at")
+  updatedAt  DateTime @updatedAt      @map(name: "updated_at")
+  verified   Boolean
+
+  // Relations
+  userInterests    UserInterest[]
+  createdUniverses Universe[]    @relation("CreatedUniverses")
+  createdPlaces    Place[]       @relation("CreatedPlaces")
+  placeUsers       PlaceUser[]
+  createdEvents    Event[]       @relation("CreatedEvents")
+  eventAttendees   EventAttendee[]
+}
+
+model Interest {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  userInterests UserInterest[]
+  // Interest relations where this interest is the source
+  relations     InterestRelation[] @relation("RelationInterest")
+  // Interest relations where this interest is the target
+  relatedBy     InterestRelation[] @relation("RelatedInterest")
+}
+
+model UserInterest {
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+  interestId String
+  createdAt  DateTime @default(now())
+
+  @@id([userId, interestId])
+}
+
+model InterestRelation {
+  id                 String    @id @default(uuid())
+  // The source interest for the relation
+  interest         Interest  @relation("RelationInterest", fields: [interestId], references: [id], onDelete: Cascade)
+  interestId       String
+  // The related interest
+  relatedInterest  Interest  @relation("RelatedInterest", fields: [relatedInterestId], references: [id], onDelete: Cascade)
+  relatedInterestId String
+  weight           Float?
+  createdAt        DateTime  @default(now())
+}
+
+model Universe {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  // Universe creator – optional so that if a user is deleted, this field can be set to null.
+  createdBy   User?    @relation("CreatedUniverses", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+
+  places      Place[]
+  events      Event[]
+}
+
+model Place {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  type        PlaceType
+  // Using a JSON field to store geometry data. Adjust this as needed.
+  geom        Json?
+  createdAt   DateTime   @default(now())
+  creator     User       @relation("CreatedPlaces", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId   String
+  universe    Universe   @relation(fields: [universeId], references: [id], onDelete: Cascade)
+  universeId  String
+
+  placeUsers  PlaceUser[]
+  events      Event[]
+}
+
+model PlaceUser {
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  place    Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  placeId  String
+  createdAt DateTime @default(now())
+
+  @@id([userId, placeId])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  privacy     Privacy
+  createdAt   DateTime @default(now())
+  universe    Universe @relation(fields: [universeId], references: [id], onDelete: Cascade)
+  universeId  String
+  // An event can optionally be linked to a place.
+  place       Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  placeId     String?
+  createdBy   User     @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+
+  eventAttendees EventAttendee[]
+}
+
+model EventAttendee {
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  String
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  status   RSVPStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+
+  @@id([eventId, userId])
+}
