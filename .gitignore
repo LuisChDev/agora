@@ -44,3 +44,5 @@ next-env.d.ts
 .envrc
 .direnv/
 .env*.local
+
+certificates
