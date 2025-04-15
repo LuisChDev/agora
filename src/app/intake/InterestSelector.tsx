@@ -5,6 +5,8 @@ import React, { useState, useEffect } from "react";
 import { useSignedUrl } from "@/lib/hooks/useSignedUrl";
 import type { Interest } from "@prisma/client";
 
+import Image from 'next/image';
+
 const INTERESTS_PER_PAGE = 6;
 
 const InterestCard = ({
@@ -15,13 +17,12 @@ const InterestCard = ({
   handleSelectInterest: (i: Interest) => void;
 }) => {
   const { url, error } = useSignedUrl(interest.id);
-  console.log(error);
   return (
     <div
       key={interest.id}
       className="interest-box"
       style={{
-        backgroundImage: `url(${url || "/default.png"})`,
+        /* backgroundImage: `url(${url || "/default.png"})`, */
         backgroundSize: "cover",
         padding: "20px",
         cursor: "pointer",
@@ -31,6 +32,11 @@ const InterestCard = ({
       }}
       onClick={() => handleSelectInterest(interest)}
     >
+      <img
+        alt={`picture of ${interest.name}`}
+        src={url || "/default.png"}
+        className="rounded-lg"
+      />
       <h3>{interest.name}</h3>
     </div>
   );
@@ -78,8 +84,8 @@ const InterestSelector = () => {
     <div>
       <h2>Select Your Interests</h2>
       <div className="grid grid-cols-3 gap-4">
-        {generalInterests.map((interest) => (
-          <InterestCard {...{interest, handleSelectInterest}} />
+        {generalInterests.map((interest, i) => (
+          <InterestCard key={`interest-${i}`} {...{interest, handleSelectInterest}} />
         ))}
       </div>
       {selectedInterest && (

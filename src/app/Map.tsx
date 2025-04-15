@@ -11,7 +11,7 @@ const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup))
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 
-import useUserLocation from "./useUserLocation";
+import useUserLocation from "@/lib/hooks/useUserLocation";
 
 // Define the shape of each marker's data
 export interface MarkerData {
