@@ -8,6 +8,8 @@ import { Providers } from "./providers";
 import { options } from "@/app/api/auth/[...nextauth]/options";
 import { auth } from "@/lib/auth";
 
+import { Navbar } from "flowbite-react";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -32,11 +34,12 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers session={session}>
+
           {children}
         </Providers>
       </body>

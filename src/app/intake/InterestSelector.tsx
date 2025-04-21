@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSignedUrl } from "@/lib/hooks/useSignedUrl";
 import type { Interest } from "@prisma/client";
 
 import Image from 'next/image';
@@ -16,7 +15,8 @@ const InterestCard = ({
   interest: Interest;
   handleSelectInterest: (i: Interest) => void;
 }) => {
-  const { url, error } = useSignedUrl(interest.id);
+  const url = `https://assets.agorapp.xyz/interests/cards/${interest.id}.png`;
+
   return (
     <div
       key={interest.id}
@@ -32,10 +32,13 @@ const InterestCard = ({
       }}
       onClick={() => handleSelectInterest(interest)}
     >
-      <img
+      <Image
         alt={`picture of ${interest.name}`}
         src={url || "/default.png"}
         className="rounded-lg"
+
+        height={100}
+        width={100}
       />
       <h3>{interest.name}</h3>
     </div>
