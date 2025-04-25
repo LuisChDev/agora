@@ -13,6 +13,7 @@ const ZoomControl = dynamic(() => import('react-leaflet').then((mod) => mod.Zoom
 import 'leaflet/dist/leaflet.css';
 import React, { useEffect, useState } from 'react';
 import useUserLocation from "@/lib/hooks/useUserLocation";
+import { Map } from "leaflet";
 
 // Define the shape of each marker's data
 export interface MarkerData {
@@ -112,7 +113,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ markers = [] }) => {
   );
 
   // Use a ref to access the map instance
-  const [map, setMap] = useState(null);
+  const [map, setMap] = useState<Map | null>(null);
 
   return (
     <div className="relative w-full h-full">
@@ -121,7 +122,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ markers = [] }) => {
         zoom={13}
         style={{ height: '100%', width: '100%', zIndex: 0 }}
         zoomControl={false}
-        whenCreated={setMap}
+        ref={setMap}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
