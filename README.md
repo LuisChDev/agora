@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgorApp
 
-## Getting Started
+This is a social media web & mobile app focused on connecting people who are
+close-by, based on their interests.
 
-First, run the development server:
+The main view of the app (app/page.tsx) is a map that's centered on the user's
+current location. (the user's location is not displayed by default to other
+users, but they are free to share it.) The main feature to interact with are
+_places_, which are locations placed on the map. Places can be point-like (just
+pins on the map), path-like (an open string of pins) or area-like (a closed
+path). User can usually mark their own places on the map, although rules may
+vary.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+similarly, there isn't a single map, but rather a number of _Universes_. an
+Universe is its own instance of the map with its own Places. Users can be
+members of any number of Universes. Universes can be public or private (of some
+User), who then act as admins to these Universes.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Upon registering with the app, Users will be requested to say their
+_Interests_. These could be sports, arts, dancing, etc. There can also be
+sub-interests, like specific sports (football, baseball, etc.), down to
+individual players.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Finally, therre may also be _Events_ taking place on any Universe. Users may
+attend these Events.

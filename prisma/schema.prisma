@@ -15,13 +15,13 @@ enum PlaceType {
 
 enum Privacy {
   PUBLIC      @map("public")
-    INVITE_ONLY @map("invite_only")
+  INVITE_ONLY @map("invite_only")
 }
 
 enum RSVPStatus {
   ACCEPTED @map("accepted")
-    DECLINED @map("declined")
-    PENDING  @map("pending")
+  DECLINED @map("declined")
+  PENDING  @map("pending")
 }
 
 model Account {
@@ -54,13 +54,13 @@ model Session {
   updatedAt    DateTime @updatedAt
 }
 
-
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  preferredLocale String   @default("en")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -96,23 +96,51 @@ model VerificationRequest {
   @@unique([identifier, token])
 }
 
+model LocalizedText {
+  id       String   @id @default(uuid())
+  locale   String
+  text     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations - tables with localized text fields
+  interestNames Interest[] @relation("InterestName")
+  interestDescriptions Interest[] @relation("InterestDescription")
+
+  @@unique([locale, text])
+}
+
 model Interest {
   id          String   @id @default(uuid())
-  name        String
+  nameId      String
+  name        LocalizedText @relation("InterestName", fields: [nameId], references: [id])
   imageUrl    String?
-  description String?
-
-  parentId    String?
-  parent      Interest?  @relation("ChildInterests", fields: [parentId], references: [id])
-  children    Interest[] @relation("ChildInterests")
-
+  descriptionId String?
+  description LocalizedText? @relation("InterestDescription", fields: [descriptionId], references: [id])
   createdAt   DateTime @default(now())
 
   userInterests UserInterest[]
+  
+  // Interest parent-child relations where this interest is the child
+  parentInterests InterestParentChild[] @relation("ChildInterest")
+  // Interest parent-child relations where this interest is the parent
+  childInterests  InterestParentChild[] @relation("ParentInterest")
+  
   // Interest relations where this interest is the source
   relations     InterestRelation[] @relation("RelationInterest")
   // Interest relations where this interest is the target
   relatedBy     InterestRelation[] @relation("RelatedInterest")
+}
+
+model InterestParentChild {
+  id         String   @id @default(uuid())
+  parentId   String
+  parent     Interest @relation("ParentInterest", fields: [parentId], references: [id], onDelete: Cascade)
+  childId    String
+  child      Interest @relation("ChildInterest", fields: [childId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([parentId, childId])
 }
 
 model UserInterest {
@@ -121,7 +149,7 @@ model UserInterest {
   interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
   interestId String
   createdAt  DateTime @default(now())
-  isNegative Boolean @default(false)
+  isNegative Boolean  @default(false)
 
   @@id([userId, interestId])
 }
