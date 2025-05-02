@@ -1,32 +1,32 @@
-import type { GetServerSidePropsContext, NextApiRequest, NextApiResponse }  from "next";
-import { AuthOptions, getServerSession } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
-import GoogleProvider from "next-auth/providers/google";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { NextRequest } from "next/server";
+import { getServerSession } from "@auth/core";
+import Google from "@auth/core/providers/google";
+import Email from "@auth/core/providers/nodemailer";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 
-export const options: AuthOptions = {
+export const authConfig = {
   providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET
-    }),
-    GoogleProvider({
+    Google({
       clientId: process.env.GOOGLE_ID,
       clientSecret: process.env.GOOGLE_SECRET
+    }),
+    Email({
+      server: process.env.EMAIL_SERVER,
+      from: process.env.EMAIL_FROM
     })
   ],
-
   adapter: PrismaAdapter(prisma),
-  secret: process.env.NEXTAUTH_SECRET
-}
-
-export function auth(
-  ...args:
-    | [GetServerSidePropsContext["req"], GetServerSidePropsContext["res"]]
-    | [NextApiRequest, NextApiResponse]
-    | []
-) {
-  return getServerSession(...args, options)
+  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: "jwt"
+  },
+  pages: {
+    signIn: "/login"
+  }
 };
+
+export async function auth(request: NextRequest) {
+  return getServerSession(authConfig);
+}
 

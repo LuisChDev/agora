@@ -1,0 +1,249 @@
+This is the app's current schema. It may be updated over time:
+
+```
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum PlaceType {
+  spot
+  path
+  area
+}
+
+enum Privacy {
+  PUBLIC      @map("public")
+  INVITE_ONLY @map("invite_only")
+}
+
+enum RSVPStatus {
+  ACCEPTED @map("accepted")
+  DECLINED @map("declined")
+  PENDING  @map("pending")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expiresAt         Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  preferredLocale String   @default("en")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  userInterests    UserInterest[]
+  createdUniverses Universe[]      @relation("CreatedUniverses")
+  createdPlaces    Place[]         @relation("CreatedPlaces")
+  placeUsers       PlaceUser[]
+  createdEvents    Event[]         @relation("CreatedEvents")
+  eventAttendees   EventAttendee[]
+
+  // Relations - next auth
+  accounts         Account[]
+  sessions         Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model VerificationRequest {
+  id         String   @id @default(cuid())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, token])
+}
+
+model LocalizedText {
+  id       String   @id @default(uuid())
+  locale   String
+  text     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations - tables with localized text fields
+  interestNames Interest[] @relation("InterestName")
+  interestDescriptions Interest[] @relation("InterestDescription")
+
+  @@unique([locale, text])
+}
+
+model Interest {
+  id          String   @id @default(uuid())
+  nameId      String
+  name        LocalizedText @relation("InterestName", fields: [nameId], references: [id])
+  imageUrl    String?
+  descriptionId String?
+  description LocalizedText? @relation("InterestDescription", fields: [descriptionId], references: [id])
+  createdAt   DateTime @default(now())
+
+  userInterests UserInterest[]
+  
+  // Interest parent-child relations where this interest is the child
+  parentInterests InterestParentChild[] @relation("ChildInterest")
+  // Interest parent-child relations where this interest is the parent
+  childInterests  InterestParentChild[] @relation("ParentInterest")
+  
+  // Interest relations where this interest is the source
+  relations     InterestRelation[] @relation("RelationInterest")
+  // Interest relations where this interest is the target
+  relatedBy     InterestRelation[] @relation("RelatedInterest")
+}
+
+model InterestParentChild {
+  id         String   @id @default(uuid())
+  parentId   String
+  parent     Interest @relation("ParentInterest", fields: [parentId], references: [id], onDelete: Cascade)
+  childId    String
+  child      Interest @relation("ChildInterest", fields: [childId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([parentId, childId])
+}
+
+model UserInterest {
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+  interestId String
+  createdAt  DateTime @default(now())
+  isNegative Boolean  @default(false)
+
+  @@id([userId, interestId])
+}
+
+model InterestRelation {
+  id                String   @id @default(uuid())
+  // The source interest for the relation
+  interest          Interest @relation("RelationInterest", fields: [interestId], references: [id], onDelete: Cascade)
+  interestId        String
+  // The related interest
+  relatedInterest   Interest @relation("RelatedInterest", fields: [relatedInterestId], references: [id], onDelete: Cascade)
+  relatedInterestId String
+  weight            Float?
+  createdAt         DateTime @default(now())
+}
+
+model Universe {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  // Universe creator – optional so that if a user is deleted, this field can be set to null.
+  createdBy   User?    @relation("CreatedUniverses", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+
+  places Place[]
+  events Event[]
+}
+
+model Place {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  type        PlaceType
+  // Using a JSON field to store geometry data. Adjust this as needed.
+  geom        Json?
+  createdAt   DateTime  @default(now())
+  creator     User      @relation("CreatedPlaces", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId   String
+  universe    Universe  @relation(fields: [universeId], references: [id], onDelete: Cascade)
+  universeId  String
+
+  placeUsers PlaceUser[]
+  events     Event[]
+}
+
+model PlaceUser {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  placeId   String
+  createdAt DateTime @default(now())
+
+  @@id([userId, placeId])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  privacy     Privacy
+  createdAt   DateTime @default(now())
+  universe    Universe @relation(fields: [universeId], references: [id], onDelete: Cascade)
+  universeId  String
+  // An event can optionally be linked to a place.
+  place       Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  placeId     String?
+  createdBy   User     @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+
+  eventAttendees EventAttendee[]
+}
+
+model EventAttendee {
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  status    RSVPStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+
+  @@id([eventId, userId])
+}
+```
+
+here's a brief explanation of the data:
+
+1. Account, User, Session, VerificationToken, VerificationRequest - these are based on next-auth plus the prisma adapter for easy user functionality.
+2. Interest, UserInterest, InterestRelation - Each user is associated with a number of interests, that is, things they like (or explicitly dislike). Interests are hierarchical, that is, there are sub-interests, like if a user likes football, they may be specially interested on specific teams. Interests may in general be related in some way which could be measured in order to help connect people.
+3. Place, Universe, PlaceUser - Places (or "landmarks") are the staple of agorapp. They represent geographical locations and as such they can be either points (a single coordinate), paths (an open string of points) or areas (a closed string of points). each "parallel" Universe holds any number of Places. Users can be part of any number of Universes.
+4. Event, EventAttendee - Events can take place in an Universe and be associated with a number of Places. Users can be attend any number of Events.
